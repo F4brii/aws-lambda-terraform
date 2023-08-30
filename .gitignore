@@ -4,3 +4,4 @@
 *.backup
 *.tfstate
 *.info
+node_modules
