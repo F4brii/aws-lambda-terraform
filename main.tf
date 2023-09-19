@@ -108,9 +108,9 @@ resource "aws_api_gateway_rest_api" "api_gateway_main" {
 }
 
 resource "aws_api_gateway_resource" "api_gateway_resource" {
+  rest_api_id = aws_api_gateway_rest_api.api_gateway_main.id
   parent_id   = aws_api_gateway_rest_api.api_gateway_main.root_resource_id
   path_part   = "person"
-  rest_api_id = aws_api_gateway_rest_api.api_gateway_main.id
   depends_on  = [aws_api_gateway_rest_api.api_gateway_main]
 }
 
@@ -143,5 +143,5 @@ resource "aws_lambda_permission" "api_gateway" {
   action        = "lambda:InvokeFunction"
   function_name = aws_lambda_function.func_get_person_list.function_name
   principal     = "apigateway.amazonaws.com"
-  source_arn    = aws_api_gateway_rest_api.api_gateway_main.execution_arn
+  source_arn    = "${aws_api_gateway_rest_api.api_gateway_main.execution_arn}/*/*"
 }
