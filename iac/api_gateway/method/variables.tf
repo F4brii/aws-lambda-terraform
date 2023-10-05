@@ -1,11 +1,21 @@
-variable "api_gateway_name" {
+variable "aws_api_gateway_resource_id" {
   type        = string
-  description = "Api Gateway name"
+  description = "Api Gateway resource id"
 }
 
-variable "path_part" {
+variable "api_gateway_id" {
   type        = string
-  description = "Rest api id"
+  description = "Api Gateway id"
+}
+
+variable "api_gateway_root_resource_id" {
+  type        = string
+  description = "Api Gateway root resource id"
+}
+
+variable "api_gateway_execution_arn" {
+  type        = string
+  description = "Api Gateway execution arn"
 }
 
 variable "http_method" {
