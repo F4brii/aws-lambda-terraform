@@ -4,6 +4,11 @@ resource "aws_lambda_function" "lambda" {
   role          = var.role_arn
   handler       = var.handler
   runtime       = var.runtime
+  timeout       = 15
+
+  environment {
+    variables = var.lambda_env
+  }
 
   vpc_config {
     subnet_ids         = var.subnet_ids

@@ -11,5 +11,9 @@
   "license": "ISC",
   "devDependencies": {
     "jest": "^29.6.4"
+  },
+  "dependencies": {
+    "@aws-sdk/client-dynamodb": "^3.425.0",
+    "@aws-sdk/util-dynamodb": "^3.425.0"
   }
 }

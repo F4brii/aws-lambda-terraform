@@ -5,29 +5,60 @@ module "vpc" {
   availability_zone = "us-east-1a"
 }
 
+resource "aws_internet_gateway" "internet_gateway" {
+  vpc_id = module.vpc.vpc_id 
+}
+
+
+resource "aws_route_table" "route_table" {
+  vpc_id = module.vpc.vpc_id
+
+  route {
+    cidr_block = "0.0.0.0/0"
+    gateway_id = aws_internet_gateway.internet_gateway.id
+  }
+}
+
+resource "aws_route_table_association" "subnet_association" {
+  subnet_id      = module.vpc.subnet_id
+  route_table_id = aws_route_table.route_table.id
+}
+
 resource "aws_security_group" "security_group_main" {
   name        = "security-group-main"
   description = "Allow TLS inbound traffic"
   vpc_id      = module.vpc.vpc_id
-
-  ingress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
 }
 
 module "role_person_lambdas" {
   source    = "./iac/iam/roles"
   role_name = "iam-role-person"
+}
+
+resource "aws_dynamodb_table" "table_person" {
+  name           = "ddb-person"
+  billing_mode   = "PROVISIONED"
+  hash_key       = "id"
+  read_capacity  = 1
+  write_capacity = 1
+
+  attribute {
+    name = "id"
+    type = "N"
+  }
+
+  stream_enabled   = true
+  stream_view_type = "NEW_AND_OLD_IMAGES"
+}
+
+resource "aws_vpc_endpoint" "vpc_endpoint" {
+  vpc_id       = module.vpc.vpc_id
+  service_name = "com.amazonaws.${var.region}.dynamodb"
+}
+
+resource "aws_vpc_endpoint_route_table_association" "private_dynamodb" {
+  vpc_endpoint_id = aws_vpc_endpoint.vpc_endpoint.id
+  route_table_id  = aws_route_table.route_table.id
 }
 
 data "archive_file" "zip_nodejs_code" {
@@ -37,23 +68,29 @@ data "archive_file" "zip_nodejs_code" {
 }
 
 module "lambda_get_person_list" {
-  source             = "./iac/lambda"
-  function_name      = "func-get-person-list"
-  filename           = "${path.module}/node-code.zip"
-  role_arn           = module.role_person_lambdas.role_arn
-  handler            = "src/functions/person/handler.getPersonList"
-  runtime            = "nodejs14.x"
+  source        = "./iac/lambda"
+  function_name = "func-get-person-list"
+  filename      = "${path.module}/node-code.zip"
+  role_arn      = module.role_person_lambdas.role_arn
+  handler       = "src/functions/person/handler.getPersonList"
+  runtime       = "nodejs14.x"
+  lambda_env = {
+    PERSON_TABLE = aws_dynamodb_table.table_person.name
+  }
   subnet_ids         = [module.vpc.subnet_id]
   security_group_ids = [aws_security_group.security_group_main.id]
 }
 
 module "lambda_create_person" {
-  source             = "./iac/lambda"
-  function_name      = "func-create-person"
-  filename           = "${path.module}/node-code.zip"
-  role_arn           = module.role_person_lambdas.role_arn
-  handler            = "src/functions/person/handler.createPerson"
-  runtime            = "nodejs14.x"
+  source        = "./iac/lambda"
+  function_name = "func-create-person"
+  filename      = "${path.module}/node-code.zip"
+  role_arn      = module.role_person_lambdas.role_arn
+  handler       = "src/functions/person/handler.createPerson"
+  runtime       = "nodejs16.x"
+  lambda_env = {
+    PERSON_TABLE = aws_dynamodb_table.table_person.name
+  }
   subnet_ids         = [module.vpc.subnet_id]
   security_group_ids = [aws_security_group.security_group_main.id]
 }
@@ -97,4 +134,17 @@ module "create_person_http_post" {
   lambda_name                  = module.lambda_create_person.lambda_function_name
 
 }
+
+module "dyanmodb_policy_attachment" {
+  source             = "./iac/iam/policy"
+  policy_name        = "dynamodb-policy"
+  policy_description = "Dynamodb policy"
+  policy_actions = [
+    "dynamodb:PutItem",
+    "dynamodb:UpdateItem"
+  ]
+  resource_arn = aws_dynamodb_table.table_person.arn
+  role_arn     = [module.role_person_lambdas.role_name]
+}
+
 
