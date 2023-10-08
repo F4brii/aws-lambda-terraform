@@ -40,7 +40,7 @@ class PersonService {
 
     async list() {
         try {
-            const { error, data } = await this.dataBaseNoSQL.list();
+            const { error, data } = await this.dataBaseNoSQL.list(process.env.PERSON_TABLE);
 
             if (error) {
                 return {
@@ -49,7 +49,11 @@ class PersonService {
                 };
             }
 
-            const personList = data.Items.map((item) => unmarshall(item));
+            let personList = [];
+
+            if (data.length > 0) {
+                personList = data.map((item) => unmarshall(item));
+            }
 
             return {
                 statusCode: 200,

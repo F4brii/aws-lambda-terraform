@@ -6,7 +6,7 @@ module "vpc" {
 }
 
 resource "aws_internet_gateway" "internet_gateway" {
-  vpc_id = module.vpc.vpc_id 
+  vpc_id = module.vpc.vpc_id
 }
 
 
@@ -28,6 +28,18 @@ resource "aws_security_group" "security_group_main" {
   name        = "security-group-main"
   description = "Allow TLS inbound traffic"
   vpc_id      = module.vpc.vpc_id
+  ingress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
 }
 
 module "role_person_lambdas" {
