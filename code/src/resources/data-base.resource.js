@@ -1,4 +1,4 @@
-const { DynamoDBClient, PutItemCommand } = require("@aws-sdk/client-dynamodb");
+const { DynamoDBClient, PutItemCommand, ScanCommand } = require("@aws-sdk/client-dynamodb");
 
 class DataBaseNoSQL {
     constructor() {
@@ -16,6 +16,28 @@ class DataBaseNoSQL {
             await this.dynamodbClient.send(new PutItemCommand(params));
         } catch (error) {
             console.log(error.message);
+        }
+    }
+
+    async list(tableName) {
+        try {
+            const params = {
+                TableName: tableName
+            };
+
+            const result = await this.dynamodbClient.send(new ScanCommand(params));
+
+            return {
+                error: false,
+                data: result.Items
+            }
+        } catch (error) {
+            console.log(error.message);
+
+            return {
+                error: true,
+                data: error.message
+            }
         }
     }
 }

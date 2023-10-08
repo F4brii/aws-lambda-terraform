@@ -73,7 +73,7 @@ module "lambda_get_person_list" {
   filename      = "${path.module}/node-code.zip"
   role_arn      = module.role_person_lambdas.role_arn
   handler       = "src/functions/person/handler.getPersonList"
-  runtime       = "nodejs14.x"
+  runtime       = "nodejs16.x"
   lambda_env = {
     PERSON_TABLE = aws_dynamodb_table.table_person.name
   }
@@ -141,6 +141,7 @@ module "dyanmodb_policy_attachment" {
   policy_description = "Dynamodb policy"
   policy_actions = [
     "dynamodb:PutItem",
+    "dynamodb:Scan",
     "dynamodb:UpdateItem"
   ]
   resource_arn = aws_dynamodb_table.table_person.arn

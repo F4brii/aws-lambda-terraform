@@ -1,5 +1,5 @@
 const { DataBaseNoSQL } = require("../resources/data-base.resource");
-const { marshall } = require("@aws-sdk/util-dynamodb");
+const { marshall, unmarshall } = require("@aws-sdk/util-dynamodb");
 
 class PersonService {
     constructor() {
@@ -7,28 +7,60 @@ class PersonService {
     }
 
     async create(body) {
-        if (!body || !body.id || !body.name || !body.lastName || !body.email) {
+        try {
+            if (!body || !body.id || !body.name || !body.lastName || !body.email) {
+                return {
+                    statusCode: 400,
+                    body: "Campos requeridos faltantes en la solicitud."
+                };
+            }
+
+            const { id, name, lastName, email } = body;
+
+            const item = marshall({
+                id,
+                name,
+                lastName,
+                email,
+            });
+
+            await this.dataBaseNoSQL.create(process.env.PERSON_TABLE, item);
+
             return {
-                statusCode: 400,
-                body: "Campos requeridos faltantes en la solicitud."
+                statusCode: 200,
+                body: JSON.stringify({ message: "Registro creado exitosamente." })
+            };
+        } catch (error) {
+            return {
+                statusCode: 500,
+                body: error.message
             };
         }
+    }
 
-        const { id, name, lastName, email } = body;
+    async list() {
+        try {
+            const { error, data } = await this.dataBaseNoSQL.list();
 
-        const item = marshall({
-            id,
-            name,
-            lastName,
-            email,
-        });
+            if (error) {
+                return {
+                    statusCode: 400,
+                    body: data
+                };
+            }
 
-        await this.dataBaseNoSQL.create(process.env.PERSON_TABLE, item);
+            const personList = data.Items.map((item) => unmarshall(item));
 
-        return {
-            statusCode: 200,
-            body: JSON.stringify({ message: "Registro creado exitosamente." })
-        };
+            return {
+                statusCode: 200,
+                body: JSON.stringify(personList)
+            }
+        } catch (error) {
+            return {
+                statusCode: 500,
+                body: error.message
+            };
+        }
     }
 }
 

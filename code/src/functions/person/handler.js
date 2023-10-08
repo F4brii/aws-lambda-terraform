@@ -3,10 +3,7 @@ const { PersonService } = require("../../services/person.service")
 const personService = new PersonService();
 
 exports.getPersonList = async (event, context) => {
-    return {
-        statusCode: 200,
-        body: 'Listar personas'
-    };
+    return await personService.list();
 }
 
 exports.createPerson = async (event, context) => {
